@@ -44,11 +44,8 @@ GLOBAL_FAQ = {
 }
 
 COMPLAINT_KEYWORDS = [
-    "broken", "not working", "doesn't work", "won't work", "issue", "problem",
-    "complaint", "complain", "unhappy", "disappointed", "terrible", "awful",
-    "dirty", "unclean", "stain", "damaged", "damage", "leak", "leaking",
-    "bug", "insect", "roach", "mouse", "mice", "rat", "mold", "smell",
-    "noise complaint", "disturbing", "unsafe", "dangerous", "broken",
-    "no hot water", "no heat", "no ac", "no air conditioning", "broken",
-    "not clean", "filthy", "disgusting", "unacceptable", "refund",
+    "broken", "not working", "doesn't work", "won't work",
+    "leak", "leaking", "roach", "mouse", "mice", "rat", "mold",
+    "no hot water", "no heat", "no ac", "no air conditioning",
+    "filthy", "disgusting",
 ]

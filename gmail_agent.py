@@ -213,6 +213,20 @@ def run():
                 for msg in messages:
                     log.info(f"  → From: {msg['from']} | Subject: {msg['subject']}")
 
+                    # Skip emails sent by own monitored accounts (prevents forwarding loops)
+                    sender = msg["from"].lower()
+                    own_emails = [e.lower() for _, e in ACCOUNTS]
+                    if any(e in sender for e in own_emails):
+                        log.info("  ⏭ Skipping — sent by a monitored account (loop prevention)")
+                        mark_read(service, msg["id"])
+                        continue
+
+                    # Skip already-forwarded complaint alerts
+                    if msg["subject"].startswith("🚨 GUEST COMPLAINT"):
+                        log.info("  ⏭ Skipping — already-forwarded complaint alert")
+                        mark_read(service, msg["id"])
+                        continue
+
                     response = process_guest_message(
                         guest_message=msg["body"],
                         source_email=account_email,
