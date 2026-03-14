@@ -86,7 +86,7 @@ def process_guest_message(
     response = client.messages.create(
         model="claude-opus-4-6",
         max_tokens=1024,
-        thinking={"type": "adaptive"},
+        thinking={"type": "enabled", "budget_tokens": 1024},
         system=system_prompt,
         messages=[
             {

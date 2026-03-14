@@ -11,11 +11,9 @@ Runs in a loop:
 import os
 import time
 import base64
-import json
 import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime
 
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
@@ -138,7 +136,9 @@ def fetch_unread(service) -> list[dict]:
         msgs.append({
             "id": m["id"],
             "from": sender,
+            "reply_to": get_header(headers, "Reply-To") or sender,
             "subject": get_header(headers, "Subject"),
+            "message_id": get_header(headers, "Message-ID"),
             "body": decode_body(msg["payload"]).strip(),
             "thread_id": msg.get("threadId"),
         })
@@ -148,7 +148,7 @@ def fetch_unread(service) -> list[dict]:
 def send_reply(service, original: dict, reply_text: str, account_email: str):
     """Send a reply to a guest message."""
     msg = MIMEMultipart()
-    msg["To"] = original["from"]
+    msg["To"] = original["reply_to"]
     msg["From"] = account_email
     msg["Subject"] = "Re: " + original["subject"]
     msg["In-Reply-To"] = original.get("message_id", "")
