@@ -3,7 +3,17 @@
 import os
 import anthropic
 from global_faq import GLOBAL_FAQ, COMPLAINT_KEYWORDS
-from sheets_client import fetch_apartment_info
+
+
+def fetch_apartment_info(sheet_link: str, email_account: str) -> dict:
+    """Fetch apartment info from Google Sheets (optional)."""
+    if not sheet_link:
+        return {}
+    try:
+        from sheets_client import fetch_apartment_info as _fetch
+        return _fetch(sheet_link, email_account)
+    except Exception:
+        return {}
 
 
 def build_system_prompt(apartment_info: dict) -> str:
