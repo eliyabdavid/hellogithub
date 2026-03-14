@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Airbnb Guest Assistant</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f7f7f7;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px;
+    }
+    h1 {
+      font-size: 1.6rem;
+      color: #FF5A5F;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      color: #888;
+      font-size: 0.9rem;
+      margin-bottom: 28px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 28px;
+      width: 100%;
+      max-width: 640px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+    .card h2 {
+      font-size: 1rem;
+      color: #444;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+    label {
+      display: block;
+      font-size: 0.82rem;
+      color: #666;
+      margin-bottom: 5px;
+      margin-top: 14px;
+    }
+    label:first-of-type { margin-top: 0; }
+    input, textarea, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      color: #333;
+      transition: border 0.2s;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: #FF5A5F;
+    }
+    textarea { resize: vertical; min-height: 110px; }
+    button {
+      margin-top: 18px;
+      width: 100%;
+      padding: 13px;
+      background: #FF5A5F;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #e0484d; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    .response-box {
+      display: none;
+      margin-top: 20px;
+      padding: 18px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+    .response-box.normal {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      color: #166534;
+    }
+    .response-box.alert {
+      background: #fff1f2;
+      border: 2px solid #FF5A5F;
+      color: #9f1239;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    .response-box.error {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      color: #92400e;
+    }
+    .spinner {
+      display: none;
+      text-align: center;
+      color: #888;
+      margin-top: 12px;
+      font-size: 0.9rem;
+    }
+    .tip {
+      font-size: 0.78rem;
+      color: #aaa;
+      margin-top: 6px;
+    }
+    .toggle-link {
+      font-size: 0.82rem;
+      color: #FF5A5F;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .settings-section { display: none; }
+  </style>
+</head>
+<body>
+
+  <h1>🏠 Airbnb Guest Assistant</h1>
+  <p class="subtitle">Powered by Claude AI</p>
+
+  <!-- Settings -->
+  <div class="card">
+    <h2>⚙️ Settings</h2>
+
+    <label>Anthropic API Key <span style="color:#FF5A5F">*</span></label>
+    <input type="password" id="api_key" placeholder="sk-ant-..." />
+    <p class="tip">Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></p>
+
+    <span class="toggle-link" onclick="toggleOptional()">▸ Optional: Google Sheet &amp; email account</span>
+    <div class="settings-section" id="optional-settings">
+      <label>Source Email Account</label>
+      <input type="email" id="source_email" placeholder="host1@gmail.com" value="host1@gmail.com" />
+      <p class="tip">Which of your Gmail accounts received this message?</p>
+
+      <label>Google Sheet URL (apartment info)</label>
+      <input type="text" id="sheet_link" placeholder="https://docs.google.com/spreadsheets/d/..." />
+      <p class="tip">Leave blank to use only the Global FAQ.</p>
+    </div>
+  </div>
+
+  <!-- Message -->
+  <div class="card">
+    <h2>💬 Guest Message</h2>
+    <label>Paste the guest's message below</label>
+    <textarea id="guest_message" placeholder="e.g. Hi! What's the WiFi password?"></textarea>
+    <button onclick="sendMessage()" id="send-btn">Get AI Response</button>
+    <div class="spinner" id="spinner">⏳ Thinking...</div>
+    <div class="response-box" id="response-box"></div>
+  </div>
+
+  <script>
+    function toggleOptional() {
+      const el = document.getElementById("optional-settings");
+      const link = document.querySelector(".toggle-link");
+      if (el.style.display === "block") {
+        el.style.display = "none";
+        link.textContent = "▸ Optional: Google Sheet & email account";
+      } else {
+        el.style.display = "block";
+        link.textContent = "▾ Optional: Google Sheet & email account";
+      }
+    }
+
+    async function sendMessage() {
+      const api_key = document.getElementById("api_key").value.trim();
+      const guest_message = document.getElementById("guest_message").value.trim();
+      const source_email = document.getElementById("source_email").value.trim();
+      const sheet_link = document.getElementById("sheet_link").value.trim();
+
+      const box = document.getElementById("response-box");
+      const spinner = document.getElementById("spinner");
+      const btn = document.getElementById("send-btn");
+
+      box.style.display = "none";
+      box.className = "response-box";
+
+      if (!api_key) { alert("Please enter your Anthropic API key."); return; }
+      if (!guest_message) { alert("Please enter the guest's message."); return; }
+
+      btn.disabled = true;
+      spinner.style.display = "block";
+
+      try {
+        const res = await fetch("/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ api_key, guest_message, source_email, sheet_link }),
+        });
+        const data = await res.json();
+
+        spinner.style.display = "none";
+        btn.disabled = false;
+        box.style.display = "block";
+
+        if (data.error) {
+          box.classList.add("error");
+          box.textContent = "⚠️ " + data.error;
+        } else if (data.is_alert) {
+          box.classList.add("alert");
+          box.textContent = "🚨 ALERT_HOST — This message requires your attention. Please respond to the guest directly.";
+        } else {
+          box.classList.add("normal");
+          box.textContent = data.response;
+        }
+      } catch (e) {
+        spinner.style.display = "none";
+        btn.disabled = false;
+        box.style.display = "block";
+        box.classList.add("error");
+        box.textContent = "⚠️ Could not reach the server. Is it running?";
+      }
+    }
+
+    // Allow Ctrl+Enter to submit
+    document.getElementById("guest_message").addEventListener("keydown", function(e) {
+      if (e.ctrlKey && e.key === "Enter") sendMessage();
+    });
+  </script>
+</body>
+</html>
