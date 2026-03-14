@@ -109,8 +109,20 @@ def get_header(headers: list, name: str) -> str:
     return ""
 
 
+AIRBNB_SENDERS = [
+    "airbnb.com",
+    "airbnbmail.com",
+]
+
+
+def is_airbnb_email(sender: str) -> bool:
+    """Return True only if the email is from an Airbnb domain."""
+    sender_lower = sender.lower()
+    return any(domain in sender_lower for domain in AIRBNB_SENDERS)
+
+
 def fetch_unread(service) -> list[dict]:
-    """Return list of unread inbox messages."""
+    """Return list of unread inbox messages from Airbnb."""
     result = service.users().messages().list(
         userId="me", labelIds=["UNREAD", "INBOX"], maxResults=20
     ).execute()
@@ -120,9 +132,12 @@ def fetch_unread(service) -> list[dict]:
             userId="me", id=m["id"], format="full"
         ).execute()
         headers = msg["payload"].get("headers", [])
+        sender = get_header(headers, "From")
+        if not is_airbnb_email(sender):
+            continue
         msgs.append({
             "id": m["id"],
-            "from": get_header(headers, "From"),
+            "from": sender,
             "subject": get_header(headers, "Subject"),
             "body": decode_body(msg["payload"]).strip(),
             "thread_id": msg.get("threadId"),
